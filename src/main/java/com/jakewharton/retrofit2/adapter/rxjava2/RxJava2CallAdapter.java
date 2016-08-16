@@ -17,36 +17,13 @@ package com.jakewharton.retrofit2.adapter.rxjava2;
 
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Observable;
-import io.reactivex.ObservableOperator;
-import io.reactivex.Observer;
 import io.reactivex.Scheduler;
-import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Function;
 import java.lang.reflect.Type;
 import retrofit2.Call;
 import retrofit2.CallAdapter;
 import retrofit2.Response;
 
 final class RxJava2CallAdapter implements CallAdapter<Object> {
-  private static final ObservableOperator LIFT_TO_BODY =
-      new ObservableOperator<Object, Response<Object>>() {
-        @Override
-        public Observer<? super Response<Object>> apply(final Observer<? super Object> observer) {
-          return new ToBodyObserver<>(observer);
-        }
-      };
-  private static final Function MAP_RESPONSE_TO_RESULT =
-      new Function<Response<Object>, Result<Object>>() {
-        @Override public Result<Object> apply(Response<Object> response) {
-          return Result.response(response);
-        }
-      };
-  private static final Function MAP_ERROR_TO_RESULT = new Function<Throwable, Result<Object>>() {
-    @Override public Result<Object> apply(Throwable throwable) {
-      return Result.error(throwable);
-    }
-  };
-
   private final Type responseType;
   private final Scheduler scheduler;
   private final boolean isResult;
@@ -75,10 +52,9 @@ final class RxJava2CallAdapter implements CallAdapter<Object> {
 
     Observable<?> observable;
     if (isResult) {
-      observable = responseObservable.map(RxJava2CallAdapter.<R>mapResponseToResult())
-          .onErrorReturn(RxJava2CallAdapter.<R>mapErrorToResult());
+      observable = new ResultObservable<>(responseObservable);
     } else if (isBody) {
-      observable = responseObservable.lift(RxJava2CallAdapter.<R>liftToBody());
+      observable = new BodyObservable<>(responseObservable);
     } else {
       observable = responseObservable;
     }
@@ -97,54 +73,5 @@ final class RxJava2CallAdapter implements CallAdapter<Object> {
       return observable.toCompletable();
     }
     return observable;
-  }
-
-  private static <R> ObservableOperator<R, Response<R>> liftToBody() {
-    //noinspection unchecked
-    return (ObservableOperator<R, Response<R>>) LIFT_TO_BODY;
-  }
-
-  private static <R> Function<Throwable, Result<R>> mapErrorToResult() {
-    //noinspection unchecked
-    return (Function<Throwable, Result<R>>) MAP_ERROR_TO_RESULT;
-  }
-
-  private static <R> Function<Response<R>, Result<R>> mapResponseToResult() {
-    //noinspection unchecked
-    return (Function<Response<R>, Result<R>>) MAP_RESPONSE_TO_RESULT;
-  }
-
-  private static class ToBodyObserver<R> implements Observer<Response<R>> {
-    private final Observer<? super R> observer;
-    private boolean terminated;
-
-    ToBodyObserver(Observer<? super R> observer) {
-      this.observer = observer;
-    }
-
-    @Override public void onSubscribe(Disposable disposable) {
-      observer.onSubscribe(disposable);
-    }
-
-    @Override public void onNext(Response<R> response) {
-      if (response.isSuccessful()) {
-        observer.onNext(response.body());
-      } else {
-        terminated = true;
-        observer.onError(new HttpException(response));
-      }
-    }
-
-    @Override public void onError(Throwable throwable) {
-      if (!terminated) {
-        observer.onError(throwable);
-      }
-    }
-
-    @Override public void onComplete() {
-      if (!terminated) {
-        observer.onComplete();
-      }
-    }
   }
 }
