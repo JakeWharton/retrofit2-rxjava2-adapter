@@ -18,6 +18,9 @@ package com.jakewharton.retrofit2.adapter.rxjava2;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.exceptions.CompositeException;
+import io.reactivex.exceptions.Exceptions;
+import io.reactivex.plugins.RxJavaPlugins;
 import retrofit2.Response;
 
 final class ResultObservable<T> extends Observable<Result<T>> {
@@ -50,7 +53,12 @@ final class ResultObservable<T> extends Observable<Result<T>> {
       try {
         observer.onNext(Result.<R>error(throwable));
       } catch (Throwable t) {
-        observer.onError(t);
+        try {
+          observer.onError(t);
+        } catch (Throwable inner) {
+          Exceptions.throwIfFatal(inner);
+          RxJavaPlugins.onError(new CompositeException(t, inner));
+        }
         return;
       }
       observer.onComplete();

@@ -18,6 +18,9 @@ package com.jakewharton.retrofit2.adapter.rxjava2;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.exceptions.CompositeException;
+import io.reactivex.exceptions.Exceptions;
+import io.reactivex.plugins.RxJavaPlugins;
 import retrofit2.Response;
 
 final class BodyObservable<T> extends Observable<T> {
@@ -48,19 +51,32 @@ final class BodyObservable<T> extends Observable<T> {
         observer.onNext(response.body());
       } else {
         terminated = true;
-        observer.onError(new HttpException(response));
-      }
-    }
-
-    @Override public void onError(Throwable throwable) {
-      if (!terminated) {
-        observer.onError(throwable);
+        Throwable t = new HttpException(response);
+        try {
+          observer.onError(t);
+        } catch (Throwable inner) {
+          Exceptions.throwIfFatal(inner);
+          RxJavaPlugins.onError(new CompositeException(t, inner));
+        }
       }
     }
 
     @Override public void onComplete() {
       if (!terminated) {
         observer.onComplete();
+      }
+    }
+
+    @Override public void onError(Throwable throwable) {
+      if (!terminated) {
+        observer.onError(throwable);
+      } else {
+        // This should never happen! onNext handles and forwards errors automatically.
+        Throwable broken = new AssertionError(
+            "This should never happen! Report as a bug with the full stacktrace.");
+        //noinspection UnnecessaryInitCause Two-arg AssertionError constructor is 1.7+ only.
+        broken.initCause(throwable);
+        RxJavaPlugins.onError(broken);
       }
     }
   }

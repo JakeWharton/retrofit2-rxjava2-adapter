@@ -18,7 +18,9 @@ package com.jakewharton.retrofit2.adapter.rxjava2;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.exceptions.CompositeException;
 import io.reactivex.exceptions.Exceptions;
+import io.reactivex.plugins.RxJavaPlugins;
 import retrofit2.Call;
 import retrofit2.Response;
 
@@ -34,18 +36,27 @@ final class CallObservable<T> extends Observable<Response<T>> {
     Call<T> call = originalCall.clone();
     observer.onSubscribe(new CallDisposable(call));
 
+    boolean terminated = false;
     try {
       Response<T> response = call.execute();
       if (!call.isCanceled()) {
         observer.onNext(response);
       }
       if (!call.isCanceled()) {
+        terminated = true;
         observer.onComplete();
       }
     } catch (Throwable t) {
       Exceptions.throwIfFatal(t);
-      if (!call.isCanceled()) {
-        observer.onError(t);
+      if (terminated) {
+        RxJavaPlugins.onError(t);
+      } else if (!call.isCanceled()) {
+        try {
+          observer.onError(t);
+        } catch (Throwable inner) {
+          Exceptions.throwIfFatal(inner);
+          RxJavaPlugins.onError(new CompositeException(t, inner));
+        }
       }
     }
   }
