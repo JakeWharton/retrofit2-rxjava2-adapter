@@ -16,7 +16,6 @@
 package com.jakewharton.retrofit2.adapter.rxjava2;
 
 import io.reactivex.Single;
-import io.reactivex.observers.TestObserver;
 import io.reactivex.schedulers.TestScheduler;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -29,6 +28,7 @@ import retrofit2.http.GET;
 
 public final class SingleWithSchedulerTest {
   @Rule public final MockWebServer server = new MockWebServer();
+  @Rule public final RecordingSingleObserver.Rule observerRule = new RecordingSingleObserver.Rule();
 
   interface Service {
     @GET("/") Single<String> body();
@@ -49,35 +49,35 @@ public final class SingleWithSchedulerTest {
   }
 
   @Test public void bodyUsesScheduler() {
-    server.enqueue(new MockResponse().setBody("Hi"));
+    server.enqueue(new MockResponse());
 
-    TestObserver<String> observer = new TestObserver<>();
+    RecordingSingleObserver<Object> observer = observerRule.create();
     service.body().subscribe(observer);
-    observer.assertNoValues().assertNotTerminated();
+    observer.assertNoEvents();
 
     scheduler.triggerActions();
-    observer.assertValueCount(1);
+    observer.assertAnyValue();
   }
 
   @Test public void responseUsesScheduler() {
-    server.enqueue(new MockResponse().setBody("Hi"));
+    server.enqueue(new MockResponse());
 
-    TestObserver<Response<String>> observer = new TestObserver<>();
+    RecordingSingleObserver<Object> observer = observerRule.create();
     service.response().subscribe(observer);
-    observer.assertNoValues().assertNotTerminated();
+    observer.assertNoEvents();
 
     scheduler.triggerActions();
-    observer.assertValueCount(1);
+    observer.assertAnyValue();
   }
 
   @Test public void resultUsesScheduler() {
-    server.enqueue(new MockResponse().setBody("Hi"));
+    server.enqueue(new MockResponse());
 
-    TestObserver<Result<String>> observer = new TestObserver<>();
+    RecordingSingleObserver<Object> observer = observerRule.create();
     service.result().subscribe(observer);
-    observer.assertNoValues().assertNotTerminated();
+    observer.assertNoEvents();
 
     scheduler.triggerActions();
-    observer.assertValueCount(1);
+    observer.assertAnyValue();
   }
 }

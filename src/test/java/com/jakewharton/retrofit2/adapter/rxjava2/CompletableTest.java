@@ -30,6 +30,8 @@ import static okhttp3.mockwebserver.SocketPolicy.DISCONNECT_AFTER_REQUEST;
 
 public final class CompletableTest {
   @Rule public final MockWebServer server = new MockWebServer();
+  @Rule public final RecordingCompletableObserver.Rule observerRule =
+      new RecordingCompletableObserver.Rule();
 
   interface Service {
     @GET("/") Completable completable();
@@ -48,7 +50,7 @@ public final class CompletableTest {
   @Test public void completableSuccess200() {
     server.enqueue(new MockResponse().setBody("Hi"));
 
-    TestObserver<Void> observer = new TestObserver<>();
+    RecordingCompletableObserver observer = observerRule.create();
     service.completable().subscribe(observer);
     observer.assertComplete();
   }
@@ -56,15 +58,15 @@ public final class CompletableTest {
   @Test public void completableSuccess404() {
     server.enqueue(new MockResponse().setResponseCode(404));
 
-    TestObserver<Void> observer = new TestObserver<>();
+    RecordingCompletableObserver observer = observerRule.create();
     service.completable().subscribe(observer);
-    observer.assertFailureAndMessage(HttpException.class, "HTTP 404 Client Error");
+    observer.assertError(HttpException.class, "HTTP 404 Client Error");
   }
 
   @Test public void completableFailure() {
     server.enqueue(new MockResponse().setSocketPolicy(DISCONNECT_AFTER_REQUEST));
 
-    TestObserver<Void> observer = new TestObserver<>();
+    RecordingCompletableObserver observer = observerRule.create();
     service.completable().subscribe(observer);
     observer.assertError(IOException.class);
   }
