@@ -16,7 +16,6 @@
 package com.jakewharton.retrofit2.adapter.rxjava2;
 
 import io.reactivex.Completable;
-import io.reactivex.observers.TestObserver;
 import io.reactivex.schedulers.TestScheduler;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -28,6 +27,8 @@ import retrofit2.http.GET;
 
 public final class CompletableWithSchedulerTest {
   @Rule public final MockWebServer server = new MockWebServer();
+  @Rule public final RecordingCompletableObserver.Rule observerRule =
+      new RecordingCompletableObserver.Rule();
 
   interface Service {
     @GET("/") Completable completable();
@@ -45,11 +46,11 @@ public final class CompletableWithSchedulerTest {
   }
 
   @Test public void completableUsesScheduler() {
-    server.enqueue(new MockResponse().setBody("Hi"));
+    server.enqueue(new MockResponse());
 
-    TestObserver<Void> observer = new TestObserver<>();
+    RecordingCompletableObserver observer = observerRule.create();
     service.completable().subscribe(observer);
-    observer.assertNotTerminated();
+    observer.assertNoEvents();
 
     scheduler.triggerActions();
     observer.assertComplete();

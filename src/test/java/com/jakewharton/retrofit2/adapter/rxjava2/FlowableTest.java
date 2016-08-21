@@ -16,7 +16,6 @@
 package com.jakewharton.retrofit2.adapter.rxjava2;
 
 import io.reactivex.Flowable;
-import io.reactivex.subscribers.TestSubscriber;
 import java.io.IOException;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
@@ -32,6 +31,7 @@ import static okhttp3.mockwebserver.SocketPolicy.DISCONNECT_AFTER_REQUEST;
 
 public final class FlowableTest {
   @Rule public final MockWebServer server = new MockWebServer();
+  @Rule public final RecordingSubscriber.Rule subscriberRule = new RecordingSubscriber.Rule();
 
   interface Service {
     @GET("/") Flowable<String> body();
@@ -53,23 +53,23 @@ public final class FlowableTest {
   @Test public void bodySuccess200() {
     server.enqueue(new MockResponse().setBody("Hi"));
 
-    TestSubscriber<String> subscriber = new TestSubscriber<>();
+    RecordingSubscriber<String> subscriber = subscriberRule.create();
     service.body().subscribe(subscriber);
-    subscriber.assertValues("Hi").assertComplete();
+    subscriber.assertValue("Hi").assertComplete();
   }
 
   @Test public void bodySuccess404() {
     server.enqueue(new MockResponse().setResponseCode(404));
 
-    TestSubscriber<String> subscriber = new TestSubscriber<>();
+    RecordingSubscriber<String> subscriber = subscriberRule.create();
     service.body().subscribe(subscriber);
-    subscriber.assertFailureAndMessage(HttpException.class, "HTTP 404 Client Error");
+    subscriber.assertError(HttpException.class, "HTTP 404 Client Error");
   }
 
   @Test public void bodyFailure() {
     server.enqueue(new MockResponse().setSocketPolicy(DISCONNECT_AFTER_REQUEST));
 
-    TestSubscriber<String> subscriber = new TestSubscriber<>();
+    RecordingSubscriber<String> subscriber = subscriberRule.create();
     service.body().subscribe(subscriber);
     subscriber.assertError(IOException.class);
   }
@@ -77,47 +77,42 @@ public final class FlowableTest {
   @Test public void bodyRespectsBackpressure() {
     server.enqueue(new MockResponse().setBody("Hi"));
 
-    TestSubscriber<String> subscriber = new TestSubscriber<>(0);
+    RecordingSubscriber<String> subscriber = subscriberRule.createWithInitialRequest(0);
     Flowable<String> o = service.body();
 
     o.subscribe(subscriber);
     assertThat(server.getRequestCount()).isEqualTo(1);
-    subscriber.assertNoValues().assertNotTerminated();
+    subscriber.assertNoEvents();
 
     subscriber.request(1);
-    subscriber.assertValues("Hi").assertComplete();
+    subscriber.assertAnyValue().assertComplete();
 
     subscriber.request(Long.MAX_VALUE); // Subsequent requests do not trigger HTTP or notifications.
     assertThat(server.getRequestCount()).isEqualTo(1);
-    subscriber.assertValueCount(1).assertComplete();
   }
 
   @Test public void responseSuccess200() {
-    server.enqueue(new MockResponse().setBody("Hi"));
+    server.enqueue(new MockResponse());
 
-    TestSubscriber<Response<String>> subscriber = new TestSubscriber<>();
+    RecordingSubscriber<Response<String>> subscriber = subscriberRule.create();
     service.response().subscribe(subscriber);
-    Response<String> response = subscriber.values().get(0);
-    assertThat(response.isSuccessful()).isTrue();
-    assertThat(response.body()).isEqualTo("Hi");
+    assertThat(subscriber.takeValue().isSuccessful()).isTrue();
     subscriber.assertComplete();
   }
 
-  @Test public void responseSuccess404() throws IOException {
-    server.enqueue(new MockResponse().setResponseCode(404).setBody("Hi"));
+  @Test public void responseSuccess404() {
+    server.enqueue(new MockResponse().setResponseCode(404));
 
-    TestSubscriber<Response<String>> subscriber = new TestSubscriber<>();
+    RecordingSubscriber<Response<String>> subscriber = subscriberRule.create();
     service.response().subscribe(subscriber);
-    Response<String> response = subscriber.values().get(0);
-    assertThat(response.isSuccessful()).isFalse();
-    assertThat(response.errorBody().string()).isEqualTo("Hi");
+    assertThat(subscriber.takeValue().isSuccessful()).isFalse();
     subscriber.assertComplete();
   }
 
   @Test public void responseFailure() {
     server.enqueue(new MockResponse().setSocketPolicy(DISCONNECT_AFTER_REQUEST));
 
-    TestSubscriber<Response<String>> subscriber = new TestSubscriber<>();
+    RecordingSubscriber<Response<String>> subscriber = subscriberRule.create();
     service.response().subscribe(subscriber);
     subscriber.assertError(IOException.class);
   }
@@ -125,81 +120,67 @@ public final class FlowableTest {
   @Test public void responseRespectsBackpressure() {
     server.enqueue(new MockResponse().setBody("Hi"));
 
-    TestSubscriber<Response<String>> subscriber = new TestSubscriber<>(0);
+    RecordingSubscriber<Response<String>> subscriber = subscriberRule.createWithInitialRequest(0);
     Flowable<Response<String>> o = service.response();
 
     o.subscribe(subscriber);
     assertThat(server.getRequestCount()).isEqualTo(1);
-    subscriber.assertNoValues().assertNotTerminated();
+    subscriber.assertNoEvents();
 
     subscriber.request(1);
-    Response<String> response = subscriber.values().get(0);
-    assertThat(response.isSuccessful()).isTrue();
-    assertThat(response.body()).isEqualTo("Hi");
-    subscriber.assertComplete();
+    subscriber.assertAnyValue().assertComplete();
 
     subscriber.request(Long.MAX_VALUE); // Subsequent requests do not trigger HTTP or notifications.
     assertThat(server.getRequestCount()).isEqualTo(1);
-    subscriber.assertValueCount(1).assertComplete();
   }
 
   @Test public void resultSuccess200() {
-    server.enqueue(new MockResponse().setBody("Hi"));
+    server.enqueue(new MockResponse());
 
-    TestSubscriber<Result<String>> subscriber = new TestSubscriber<>();
+    RecordingSubscriber<Result<String>> subscriber = subscriberRule.create();
     service.result().subscribe(subscriber);
-    Result<String> result = subscriber.values().get(0);
+    Result<String> result = subscriber.takeValue();
     assertThat(result.isError()).isFalse();
-    Response<String> response = result.response();
-    assertThat(response.isSuccessful()).isTrue();
-    assertThat(response.body()).isEqualTo("Hi");
+    assertThat(result.response().isSuccessful()).isTrue();
     subscriber.assertComplete();
   }
 
-  @Test public void resultSuccess404() throws IOException {
-    server.enqueue(new MockResponse().setResponseCode(404).setBody("Hi"));
+  @Test public void resultSuccess404() {
+    server.enqueue(new MockResponse().setResponseCode(404));
 
-    TestSubscriber<Result<String>> subscriber = new TestSubscriber<>();
+    RecordingSubscriber<Result<String>> subscriber = subscriberRule.create();
     service.result().subscribe(subscriber);
-    Result<String> result = subscriber.values().get(0);
+    Result<String> result = subscriber.takeValue();
     assertThat(result.isError()).isFalse();
-    Response<String> response = result.response();
-    assertThat(response.isSuccessful()).isFalse();
-    assertThat(response.errorBody().string()).isEqualTo("Hi");
+    assertThat(result.response().isSuccessful()).isFalse();
     subscriber.assertComplete();
   }
 
   @Test public void resultFailure() {
     server.enqueue(new MockResponse().setSocketPolicy(DISCONNECT_AFTER_REQUEST));
 
-    TestSubscriber<Result<String>> subscriber = new TestSubscriber<>();
+    RecordingSubscriber<Result<String>> subscriber = subscriberRule.create();
     service.result().subscribe(subscriber);
-    Result<String> result = subscriber.values().get(0);
+    Result<String> result = subscriber.takeValue();
     assertThat(result.isError()).isTrue();
     assertThat(result.error()).isInstanceOf(IOException.class);
     subscriber.assertComplete();
   }
 
-  @Test public void resultRespectsBackpressure() throws IOException {
+  @Test public void resultRespectsBackpressure() {
     server.enqueue(new MockResponse().setBody("Hi"));
 
-    TestSubscriber<Result<String>> subscriber = new TestSubscriber<>(0);
+    RecordingSubscriber<Result<String>> subscriber = subscriberRule.createWithInitialRequest(0);
     Flowable<Result<String>> o = service.result();
 
     o.subscribe(subscriber);
     assertThat(server.getRequestCount()).isEqualTo(1);
-    subscriber.assertNoValues().assertNotTerminated();
+    subscriber.assertNoEvents();
 
     subscriber.request(1);
-    Result<String> result = subscriber.values().get(0);
-    assertThat(result.isError()).isFalse();
-    Response<String> response = result.response();
-    assertThat(response.isSuccessful()).isTrue();
-    assertThat(response.body()).isEqualTo("Hi");
-    subscriber.assertComplete();
+    subscriber.assertAnyValue().assertComplete();
 
     subscriber.request(Long.MAX_VALUE); // Subsequent requests do not trigger HTTP or notifications.
     assertThat(server.getRequestCount()).isEqualTo(1);
-    subscriber.assertValueCount(1).assertComplete();
   }
 }
