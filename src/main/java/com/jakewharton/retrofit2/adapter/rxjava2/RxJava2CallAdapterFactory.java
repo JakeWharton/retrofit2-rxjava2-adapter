@@ -80,23 +80,23 @@ public final class RxJava2CallAdapterFactory extends CallAdapter.Factory {
   public CallAdapter<?> get(Type returnType, Annotation[] annotations, Retrofit retrofit) {
     Class<?> rawType = getRawType(returnType);
 
-    boolean isObservable = rawType == Observable.class;
-    boolean isFlowable = rawType == Flowable.class;
-    boolean isSingle = rawType == Single.class;
-    boolean isCompletable = rawType == Completable.class;
-    if (!isObservable && !isFlowable && !isSingle && !isCompletable) {
-      return null;
+    if (rawType == Completable.class) {
+      // Completable is not parameterized (which is what the rest of this method deals with) so it
+      // can only be created with a single configuration.
+      return new RxJava2CallAdapter(Void.class, scheduler, false, true, false, false, true);
     }
 
-    if (isCompletable) {
-      return new RxJava2CallAdapter(Void.class, scheduler, false, true, false, false, true);
+    boolean isFlowable = rawType == Flowable.class;
+    boolean isSingle = rawType == Single.class;
+    if (rawType != Observable.class && !isFlowable && !isSingle) {
+      return null;
     }
 
     boolean isResult = false;
     boolean isBody = false;
     Type responseType;
     if (!(returnType instanceof ParameterizedType)) {
-      String name = isObservable ? "Observable" : isFlowable ? "Flowable" : "Single";
+      String name = isFlowable ? "Flowable" : isSingle ? "Single" : "Observable";
       throw new IllegalStateException(name + " return type must be parameterized"
           + " as " + name + "<Foo> or " + name + "<? extends Foo>");
     }
