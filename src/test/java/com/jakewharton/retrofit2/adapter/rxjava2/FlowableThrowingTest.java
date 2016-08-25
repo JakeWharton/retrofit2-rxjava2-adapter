@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -59,13 +58,12 @@ public final class FlowableThrowingTest {
     service = retrofit.create(Service.class);
   }
 
-  @Ignore("https://github.com/ReactiveX/RxJava/issues/4392")
   @Test public void bodyThrowingInOnNextDeliveredToError() {
     server.enqueue(new MockResponse());
 
     RecordingSubscriber<String> subscriber = subscriberRule.create();
     final RuntimeException e = new RuntimeException();
-    service.body().subscribe(new ForwardingSubscriber<String>(subscriber) {
+    service.body().safeSubscribe(new ForwardingSubscriber<String>(subscriber) {
       @Override public void onNext(String value) {
         throw e;
       }
@@ -128,13 +126,12 @@ public final class FlowableThrowingTest {
     assertThat(composite.getExceptions()).containsExactly(errorRef.get(), e);
   }
 
-  @Ignore("https://github.com/ReactiveX/RxJava/issues/4392")
   @Test public void responseThrowingInOnNextDeliveredToError() {
     server.enqueue(new MockResponse());
 
     RecordingSubscriber<Response<String>> subscriber = subscriberRule.create();
     final RuntimeException e = new RuntimeException();
-    service.response().subscribe(new ForwardingSubscriber<Response<String>>(subscriber) {
+    service.response().safeSubscribe(new ForwardingSubscriber<Response<String>>(subscriber) {
       @Override public void onNext(Response<String> value) {
         throw e;
       }
@@ -196,13 +193,12 @@ public final class FlowableThrowingTest {
     assertThat(composite.getExceptions()).containsExactly(errorRef.get(), e);
   }
 
-  @Ignore("https://github.com/ReactiveX/RxJava/issues/4392")
   @Test public void resultThrowingInOnNextDeliveredToError() {
     server.enqueue(new MockResponse());
 
     RecordingSubscriber<Result<String>> subscriber = subscriberRule.create();
     final RuntimeException e = new RuntimeException();
-    service.result().subscribe(new ForwardingSubscriber<Result<String>>(subscriber) {
+    service.result().safeSubscribe(new ForwardingSubscriber<Result<String>>(subscriber) {
       @Override public void onNext(Result<String> value) {
         throw e;
       }
@@ -235,7 +231,6 @@ public final class FlowableThrowingTest {
     assertThat(throwableRef.get()).isSameAs(e);
   }
 
-  @Ignore("https://github.com/ReactiveX/RxJava/issues/4392")
   @Test public void resultThrowingInOnErrorDeliveredToPlugin() {
     server.enqueue(new MockResponse());
 
@@ -251,7 +246,7 @@ public final class FlowableThrowingTest {
     RecordingSubscriber<Result<String>> subscriber = subscriberRule.create();
     final RuntimeException first = new RuntimeException();
     final RuntimeException second = new RuntimeException();
-    service.result().subscribe(new ForwardingSubscriber<Result<String>>(subscriber) {
+    service.result().safeSubscribe(new ForwardingSubscriber<Result<String>>(subscriber) {
       @Override public void onNext(Result<String> value) {
         // The only way to trigger onError for a result is if onNext throws.
         throw first;
