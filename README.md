@@ -29,21 +29,20 @@ Available types:
 Download
 --------
 
-Until RxJava 2 has a stable release, only SNAPSHOT versions are available in the Sonatype
-'snapshots' repository: https://oss.sonatype.org/content/repositories/snapshots/
-
 Gradle:
 ```groovy
-compile 'com.jakewharton.retrofit:retrofit2-rxjava2-adapter:1.0.0-SNAPSHOT'
+compile 'com.jakewharton.retrofit:retrofit2-rxjava2-adapter:1.0.0-RC1'
 ```
 or Maven:
 ```xml
 <dependency>
   <groupId>com.jakewharton.retrofit</groupId>
   <artifactId>retrofit2-rxjava2-adapter</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0-RC1</version>
 </dependency>
 ```
+
+Snapshot versions are available in the Sonatype 'snapshots' repository: https://oss.sonatype.org/content/repositories/snapshots/
 
 
 
