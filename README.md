@@ -22,6 +22,7 @@ Available types:
  * `Observable<T>`, `Observable<Response<T>>`, and `Observable<Result<T>>` where `T` is the body type.
  * `Flowable<T>`, `Flowable<Response<T>>` and `Flowable<Result<T>>` where `T` is the body type.
  * `Single<T>`, `Single<Response<T>>`, and `Single<Result<T>>`  where `T` is the body type.
+ * `Maybe<T>`, `Maybe<Response<T>>`, and `Maybe<Result<T>>`  where `T` is the body type.
  * `Completable` where response bodies are discarded.
 
 
@@ -31,14 +32,14 @@ Download
 
 Gradle:
 ```groovy
-compile 'com.jakewharton.retrofit:retrofit2-rxjava2-adapter:1.0.0-RC1'
+compile 'com.jakewharton.retrofit:retrofit2-rxjava2-adapter:1.0.0-RC2'
 ```
 or Maven:
 ```xml
 <dependency>
   <groupId>com.jakewharton.retrofit</groupId>
   <artifactId>retrofit2-rxjava2-adapter</artifactId>
-  <version>1.0.0-RC1</version>
+  <version>1.0.0-RC2</version>
 </dependency>
 ```
 
