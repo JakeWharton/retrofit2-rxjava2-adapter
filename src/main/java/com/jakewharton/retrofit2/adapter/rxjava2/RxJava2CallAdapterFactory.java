@@ -17,6 +17,7 @@ package com.jakewharton.retrofit2.adapter.rxjava2;
 
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
+import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Scheduler;
 import io.reactivex.Single;
@@ -32,7 +33,7 @@ import retrofit2.Retrofit;
  * A {@linkplain CallAdapter.Factory call adapter} which uses RxJava 2 for creating observables.
  * <p>
  * Adding this class to {@link Retrofit} allows you to return an {@link Observable},
- * {@link Flowable}, {@code Single}, or {@link Completable} from service methods.
+ * {@link Flowable}, {@code Single}, {@link Completable} or {@link Maybe} from service methods.
  * <pre><code>
  * interface MyService {
  *   &#64;GET("user/me")
@@ -83,12 +84,13 @@ public final class RxJava2CallAdapterFactory extends CallAdapter.Factory {
     if (rawType == Completable.class) {
       // Completable is not parameterized (which is what the rest of this method deals with) so it
       // can only be created with a single configuration.
-      return new RxJava2CallAdapter(Void.class, scheduler, false, true, false, false, true);
+      return new RxJava2CallAdapter(Void.class, scheduler, false, true, false, false, false, true);
     }
 
     boolean isFlowable = rawType == Flowable.class;
     boolean isSingle = rawType == Single.class;
-    if (rawType != Observable.class && !isFlowable && !isSingle) {
+    boolean isMaybe = rawType == Maybe.class;
+    if (rawType != Observable.class && !isFlowable && !isSingle && !isMaybe) {
       return null;
     }
 
@@ -122,6 +124,6 @@ public final class RxJava2CallAdapterFactory extends CallAdapter.Factory {
     }
 
     return new RxJava2CallAdapter(responseType, scheduler, isResult, isBody, isFlowable,
-        isSingle, false);
+        isSingle, isMaybe, false);
   }
 }

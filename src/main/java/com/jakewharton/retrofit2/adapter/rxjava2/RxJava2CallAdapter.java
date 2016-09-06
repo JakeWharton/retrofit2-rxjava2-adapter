@@ -30,16 +30,18 @@ final class RxJava2CallAdapter implements CallAdapter<Object> {
   private final boolean isBody;
   private final boolean isFlowable;
   private final boolean isSingle;
+  private final boolean isMaybe;
   private final boolean isCompletable;
 
   RxJava2CallAdapter(Type responseType, Scheduler scheduler, boolean isResult, boolean isBody,
-      boolean isFlowable, boolean isSingle, boolean isCompletable) {
+      boolean isFlowable, boolean isSingle, boolean isMaybe, boolean isCompletable) {
     this.responseType = responseType;
     this.scheduler = scheduler;
     this.isResult = isResult;
     this.isBody = isBody;
     this.isFlowable = isFlowable;
     this.isSingle = isSingle;
+    this.isMaybe = isMaybe;
     this.isCompletable = isCompletable;
   }
 
@@ -68,6 +70,9 @@ final class RxJava2CallAdapter implements CallAdapter<Object> {
     }
     if (isSingle) {
       return observable.toSingle();
+    }
+    if (isMaybe) {
+      return observable.toMaybe();
     }
     if (isCompletable) {
       return observable.toCompletable();
