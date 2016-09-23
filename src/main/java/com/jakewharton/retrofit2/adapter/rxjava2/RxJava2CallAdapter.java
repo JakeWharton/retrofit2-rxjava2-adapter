@@ -69,13 +69,13 @@ final class RxJava2CallAdapter implements CallAdapter<Object> {
       return observable.toFlowable(BackpressureStrategy.LATEST);
     }
     if (isSingle) {
-      return observable.toSingle();
+      return observable.singleElement().toSingle(); // TODO: change to observable.singleOrError(); once RC4 is out
     }
     if (isMaybe) {
-      return observable.toMaybe();
+      return observable.singleElement();
     }
     if (isCompletable) {
-      return observable.toCompletable();
+      return observable.ignoreElements();
     }
     return observable;
   }
