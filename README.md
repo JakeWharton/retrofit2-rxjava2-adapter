@@ -32,14 +32,14 @@ Download
 
 Gradle:
 ```groovy
-compile 'com.jakewharton.retrofit:retrofit2-rxjava2-adapter:1.0.0-RC2'
+compile 'com.jakewharton.retrofit:retrofit2-rxjava2-adapter:1.0.0-RC3'
 ```
 or Maven:
 ```xml
 <dependency>
   <groupId>com.jakewharton.retrofit</groupId>
   <artifactId>retrofit2-rxjava2-adapter</artifactId>
-  <version>1.0.0-RC2</version>
+  <version>1.0.0-RC3</version>
 </dependency>
 ```
 
