@@ -11,7 +11,7 @@
 
   <groupId>com.jakewharton.retrofit</groupId>
   <artifactId>retrofit2-rxjava2-adapter</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0-RC3</version>
 
   <name>Retrofit 2 OkHttp 2 Adapter</name>
   <description>A RxJava 2 CallAdapter.Facotry implementation for Retrofit 2.</description>
