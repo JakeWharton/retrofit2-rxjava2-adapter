@@ -34,7 +34,7 @@ final class ResultObservable<T> extends Observable<Result<T>> {
     upstream.subscribe(new ResultObserver<T>(observer));
   }
 
-  private static class ResultObserver<R> implements Observer<Response<R>> {
+  static class ResultObserver<R> implements Observer<Response<R>> {
     private final Observer<? super Result<R>> observer;
 
     ResultObserver(Observer<? super Result<R>> observer) {
