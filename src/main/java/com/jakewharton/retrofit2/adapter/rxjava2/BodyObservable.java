@@ -34,7 +34,7 @@ final class BodyObservable<T> extends Observable<T> {
     upstream.subscribe(new BodyObserver<>(observer));
   }
 
-  private static class BodyObserver<R> implements Observer<Response<R>> {
+  static class BodyObserver<R> implements Observer<Response<R>> {
     private final Observer<? super R> observer;
     private boolean terminated;
 
