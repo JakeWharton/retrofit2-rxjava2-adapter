@@ -23,6 +23,8 @@ import retrofit2.Call;
 import retrofit2.CallAdapter;
 import retrofit2.Response;
 
+import static com.jakewharton.retrofit2.adapter.rxjava2.RxCallConverter.*;
+
 final class RxJava2CallAdapter implements CallAdapter<Object> {
   private final Type responseType;
   private final Scheduler scheduler;
@@ -50,15 +52,13 @@ final class RxJava2CallAdapter implements CallAdapter<Object> {
   }
 
   @Override public <R> Object adapt(Call<R> call) {
-    Observable<Response<R>> responseObservable = new CallObservable<>(call);
-
     Observable<?> observable;
     if (isResult) {
-      observable = new ResultObservable<>(responseObservable);
+      observable = toResultObservable(call);
     } else if (isBody) {
-      observable = new BodyObservable<>(responseObservable);
+      observable = toBodyObservable(call);
     } else {
-      observable = responseObservable;
+      observable = toResponseObservable(call);
     }
 
     if (scheduler != null) {
